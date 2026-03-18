@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use chrono::Utc;
-use rand::Rng;
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use sqlx::PgPool;
 use tokio::sync::broadcast;
 
@@ -26,7 +26,8 @@ pub async fn run_simulator(pool: PgPool, tx: Arc<broadcast::Sender<String>>) {
     ];
 
     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3));
-    let mut rng = rand::thread_rng();
+    // StdRng is Send (unlike ThreadRng), safe to use across .await
+    let mut rng = StdRng::from_entropy();
 
     loop {
         interval.tick().await;

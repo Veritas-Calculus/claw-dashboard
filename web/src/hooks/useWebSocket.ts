@@ -33,6 +33,6 @@ export function useWebSocket() {
     state,
     subscribe,
     send,
-    ws: wsRef.current,
+    getWs: () => wsRef.current,
   }
 }

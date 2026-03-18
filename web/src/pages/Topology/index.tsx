@@ -111,8 +111,8 @@ export default function Topology() {
       .join('g')
       .style('cursor', 'pointer')
       .call(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (d3.drag<SVGGElement, SimNode>()
+        // d3.drag typing doesn't perfectly match Selection.call — safe cast needed
+        d3.drag<SVGGElement, SimNode>()
           .on('start', (event: d3.D3DragEvent<SVGGElement, SimNode, SimNode>, d) => {
             if (!event.active) simulation.alphaTarget(0.3).restart()
             d.fx = d.x
@@ -126,7 +126,8 @@ export default function Topology() {
             if (!event.active) simulation.alphaTarget(0)
             d.fx = null
             d.fy = null
-          })) as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          }) as any,
       )
       .on('click', (_, d) => {
         setSelectedNode(d)

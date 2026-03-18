@@ -1,5 +1,6 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import api from '@/lib/api'
 import styles from './Login.module.css'
 
@@ -59,8 +60,10 @@ export default function Login() {
       localStorage.setItem('claw-token', data.token)
       navigate('/', { replace: true })
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        || 'Authentication failed'
+      let msg = 'Authentication failed'
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.error || msg
+      }
       setError(msg)
     } finally {
       setLoading(false)

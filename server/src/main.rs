@@ -73,6 +73,9 @@ async fn main() {
         tokio::spawn(services::simulator::run_simulator(pool.clone(), broadcast_tx.clone()));
     }
 
+    // Extract bind_addr before moving any fields from cfg
+    let bind_addr = cfg.bind_addr();
+
     // Connect to OpenClaw Gateway if configured
     if let (Some(url), Some(token)) = (cfg.openclaw_gateway_url, cfg.openclaw_gateway_token) {
         let tx = broadcast_tx.clone();
@@ -104,7 +107,6 @@ async fn main() {
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
-    let bind_addr = cfg.bind_addr();
     tracing::info!("Claw API listening on {bind_addr}");
 
     let listener = tokio::net::TcpListener::bind(&bind_addr)

@@ -83,7 +83,7 @@ fn generate_trend(hours: usize, base: f64, variance: f64) -> Vec<MetricPoint> {
             let t = now - chrono::Duration::minutes((intervals - i) as i64 * 15);
             MetricPoint {
                 time: t.format("%H:%M").to_string(),
-                value: (base + (rng.gen::<f64>() - 0.5) * variance).round(),
+                value: (base + (rng.r#gen::<f64>() - 0.5) * variance).round(),
             }
         })
         .collect()
