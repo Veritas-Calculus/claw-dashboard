@@ -1,0 +1,33 @@
+# Claw Dashboard - Docker Compose
+# One-click deployment: docker compose up -d
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/veritas-calculus/claw-dashboard:latest
+    container_name: claw-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-3000}:8080"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - claw-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
+
+networks:
+  claw-net:
+    driver: bridge
+    name: claw-network
