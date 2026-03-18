@@ -81,7 +81,7 @@ services:
   # -- Frontend (Nginx) --
   dashboard:
     build:
-      context: .
+      context: ./web
       dockerfile: Dockerfile
     image: ghcr.io/veritas-calculus/claw-dashboard:latest
     container_name: claw-dashboard
