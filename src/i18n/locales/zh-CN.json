@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "Claw Dashboard",
+    "description": "AI Agent 实时监控面板"
+  },
+  "nav": {
+    "dashboard": "总览",
+    "agents": "Agent",
+    "tasks": "任务",
+    "logs": "日志",
+    "alerts": "告警",
+    "topology": "拓扑",
+    "settings": "设置"
+  },
+  "status": {
+    "active": "活跃",
+    "idle": "空闲",
+    "error": "异常",
+    "offline": "离线"
+  },
+  "common": {
+    "search": "搜索",
+    "filter": "筛选",
+    "export": "导出",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "delete": "删除",
+    "edit": "编辑",
+    "loading": "加载中...",
+    "noData": "暂无数据"
+  },
+  "settings": {
+    "language": "语言",
+    "theme": "主题",
+    "darkMode": "深色模式",
+    "lightMode": "浅色模式",
+    "apiEndpoint": "API 地址",
+    "wsEndpoint": "WebSocket 地址"
+  }
+}

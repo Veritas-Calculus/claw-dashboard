@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "Claw Dashboard",
+    "description": "AI Agent Real-time Monitoring Panel"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "agents": "Agents",
+    "tasks": "Tasks",
+    "logs": "Logs",
+    "alerts": "Alerts",
+    "topology": "Topology",
+    "settings": "Settings"
+  },
+  "status": {
+    "active": "Active",
+    "idle": "Idle",
+    "error": "Error",
+    "offline": "Offline"
+  },
+  "common": {
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "noData": "No data"
+  },
+  "settings": {
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "apiEndpoint": "API Endpoint",
+    "wsEndpoint": "WebSocket Endpoint"
+  }
+}
