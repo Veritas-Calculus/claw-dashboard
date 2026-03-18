@@ -203,7 +203,9 @@ let _instance: ClawWebSocket | null = null
 
 export function getWebSocket(): ClawWebSocket {
   if (!_instance) {
-    const url = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'
+    const baseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'
+    const token = localStorage.getItem('claw-token')
+    const url = token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl
     _instance = new ClawWebSocket(url)
   }
   return _instance

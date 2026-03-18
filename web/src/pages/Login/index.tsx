@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import api from '@/lib/api'
+import { resetWebSocket } from '@/lib/ws'
 import styles from './Login.module.css'
 
 interface AuthStatus {
@@ -58,6 +59,7 @@ export default function Login() {
       const endpoint = needsSetup ? '/auth/setup' : '/auth/login'
       const { data } = await api.post<AuthResponse>(endpoint, { username, password })
       localStorage.setItem('claw-token', data.token)
+      resetWebSocket() // Reconnect WS with fresh auth token
       navigate('/', { replace: true })
     } catch (err: unknown) {
       let msg = 'Authentication failed'

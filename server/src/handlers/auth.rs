@@ -13,7 +13,7 @@ use crate::{error::AppError, AppState};
 
 // --- JWT Claims ---
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,       // user id
     pub username: String,

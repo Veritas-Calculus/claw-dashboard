@@ -1,21 +1,53 @@
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
+        Query, State,
     },
+    http::StatusCode,
     response::IntoResponse,
+    Json,
 };
 use futures::{SinkExt, StreamExt};
+use serde::Deserialize;
+use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
+use crate::handlers::auth::validate_token;
 use crate::AppState;
+
+#[derive(Deserialize)]
+pub struct WsQuery {
+    token: Option<String>,
+}
 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
+    Query(query): Query<WsQuery>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    // Validate JWT token from query param
+    let token = match query.token {
+        Some(t) => t,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Missing token query parameter" })),
+            )
+                .into_response();
+        }
+    };
+
+    if let Err(_) = validate_token(&token) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Invalid or expired token" })),
+        )
+            .into_response();
+    }
+
     ws.on_upgrade(move |socket| handle_socket(socket, state))
+        .into_response()
 }
 
 async fn handle_socket(socket: WebSocket, state: AppState) {
@@ -63,3 +95,4 @@ pub fn broadcast_event(tx: &Arc<broadcast::Sender<String>>, event_type: &str, da
     });
     let _ = tx.send(payload.to_string());
 }
+

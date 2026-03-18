@@ -2,6 +2,7 @@ mod config;
 mod db;
 mod error;
 mod handlers;
+mod middleware;
 mod models;
 mod services;
 
@@ -84,25 +85,25 @@ async fn main() {
         });
     }
 
-    // Routes
-    let app = Router::new()
-        // Health
-        .route("/healthz", get(|| async { "ok" }))
-        // Auth (public)
-        .route("/api/v1/auth/status",  get(handlers::auth::auth_status))
-        .route("/api/v1/auth/setup",   post(handlers::auth::setup))
-        .route("/api/v1/auth/login",   post(handlers::auth::login))
-        .route("/api/v1/auth/me",      get(handlers::auth::me))
-        // API v1 (protected by frontend token checks)
+    // Protected routes — require valid JWT token
+    let protected = Router::new()
         .route("/api/v1/agents",              get(handlers::agents::list_agents))
         .route("/api/v1/tasks",               get(handlers::tasks::list_tasks))
         .route("/api/v1/logs",                get(handlers::logs::list_logs))
         .route("/api/v1/alerts",              get(handlers::alerts::list_alerts))
         .route("/api/v1/alerts/{id}/ack",     post(handlers::alerts::acknowledge_alert))
         .route("/api/v1/dashboard/metrics",   get(handlers::dashboard::get_metrics))
-        // WebSocket
+        .route("/api/v1/auth/me",             get(handlers::auth::me))
+        .layer(axum::middleware::from_fn(middleware::auth::require_auth));
+
+    // Public routes + merge protected
+    let app = Router::new()
+        .route("/healthz", get(|| async { "ok" }))
+        .route("/api/v1/auth/status",  get(handlers::auth::auth_status))
+        .route("/api/v1/auth/setup",   post(handlers::auth::setup))
+        .route("/api/v1/auth/login",   post(handlers::auth::login))
         .route("/ws", get(handlers::ws::ws_handler))
-        // Middleware
+        .merge(protected)
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
