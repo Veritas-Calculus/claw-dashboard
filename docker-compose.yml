@@ -63,7 +63,11 @@ services:
     environment:
       DATABASE_URL: postgres://claw:${PG_PASSWORD:-claw_secret}@postgres:5432/claw
       REDIS_URL: redis://redis:6379
-      RUST_LOG: claw_api=info,tower_http=info
+      RUST_LOG: ${RUST_LOG:-claw_api=info,tower_http=info}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-strong-random-secret}
+      # SEED_DATA: "true"  # uncomment for dev/demo only
+      # OPENCLAW_GATEWAY_URL: ws://your-openclaw-host:18789
+      # OPENCLAW_GATEWAY_TOKEN: your-gateway-token
     networks:
       - claw-net
     healthcheck:

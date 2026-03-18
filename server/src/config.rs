@@ -6,6 +6,9 @@ pub struct Config {
     pub redis_url: String,
     pub host: String,
     pub port: u16,
+    pub seed_data: bool,
+    pub openclaw_gateway_url: Option<String>,
+    pub openclaw_gateway_token: Option<String>,
 }
 
 impl Config {
@@ -20,6 +23,11 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(8080),
+            seed_data: env::var("SEED_DATA")
+                .map(|v| v == "true")
+                .unwrap_or(false),
+            openclaw_gateway_url: env::var("OPENCLAW_GATEWAY_URL").ok(),
+            openclaw_gateway_token: env::var("OPENCLAW_GATEWAY_TOKEN").ok(),
         }
     }
 

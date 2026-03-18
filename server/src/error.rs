@@ -10,6 +10,7 @@ pub enum AppError {
     Database(sqlx::Error),
     Redis(redis::RedisError),
     NotFound(String),
+    Unauthorized(String),
     Internal(String),
 }
 
@@ -25,6 +26,7 @@ impl IntoResponse for AppError {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Cache error".to_string())
             }
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
+            AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg.clone()),
             AppError::Internal(msg) => {
                 tracing::error!("Internal error: {msg}");
                 (StatusCode::INTERNAL_SERVER_ERROR, msg.clone())

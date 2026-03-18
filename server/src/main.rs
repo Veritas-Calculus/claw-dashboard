@@ -47,10 +47,12 @@ async fn main() {
         .await
         .expect("Failed to run migrations");
 
-    // Seed data
-    services::seed::seed_if_empty(&pool)
-        .await
-        .expect("Failed to seed database");
+    // Seed data only if SEED_DATA=true
+    if cfg.seed_data {
+        services::seed::seed_if_empty(&pool)
+            .await
+            .expect("Failed to seed database");
+    }
 
     // Redis
     let redis_client = db::redis::init_client(&cfg.redis_url)
@@ -66,14 +68,29 @@ async fn main() {
         broadcast_tx: broadcast_tx.clone(),
     };
 
-    // Start background simulator
-    tokio::spawn(services::simulator::run_simulator(pool, broadcast_tx));
+    // Start background simulator only when seeding (dev mode)
+    if cfg.seed_data {
+        tokio::spawn(services::simulator::run_simulator(pool.clone(), broadcast_tx.clone()));
+    }
+
+    // Connect to OpenClaw Gateway if configured
+    if let (Some(url), Some(token)) = (cfg.openclaw_gateway_url, cfg.openclaw_gateway_token) {
+        let tx = broadcast_tx.clone();
+        tokio::spawn(async move {
+            services::openclaw::connect_to_gateway(url, token, tx).await;
+        });
+    }
 
     // Routes
     let app = Router::new()
         // Health
         .route("/healthz", get(|| async { "ok" }))
-        // API v1
+        // Auth (public)
+        .route("/api/v1/auth/status",  get(handlers::auth::auth_status))
+        .route("/api/v1/auth/setup",   post(handlers::auth::setup))
+        .route("/api/v1/auth/login",   post(handlers::auth::login))
+        .route("/api/v1/auth/me",      get(handlers::auth::me))
+        // API v1 (protected by frontend token checks)
         .route("/api/v1/agents",              get(handlers::agents::list_agents))
         .route("/api/v1/tasks",               get(handlers::tasks::list_tasks))
         .route("/api/v1/logs",                get(handlers::logs::list_logs))
