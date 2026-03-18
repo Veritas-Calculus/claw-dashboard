@@ -18,7 +18,7 @@ interface TableProps<T> {
   onRowClick?: (row: T) => void
 }
 
-export default function Table<T extends Record<string, unknown>>({
+export default function Table<T>({
   columns,
   data,
   rowKey,
@@ -39,8 +39,10 @@ export default function Table<T extends Record<string, unknown>>({
 
   const sorted = sortKey
     ? [...data].sort((a, b) => {
-        const aVal = a[sortKey]
-        const bVal = b[sortKey]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const aVal = (a as any)[sortKey]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const bVal = (b as any)[sortKey]
         if (aVal == null || bVal == null) return 0
         const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
         return sortDir === 'asc' ? cmp : -cmp
@@ -89,7 +91,8 @@ export default function Table<T extends Record<string, unknown>>({
                   <td key={col.key} className={styles.td}>
                     {col.render
                       ? col.render(row)
-                      : (row[col.key] as ReactNode)}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      : ((row as any)[col.key] as ReactNode)}
                   </td>
                 ))}
               </tr>
