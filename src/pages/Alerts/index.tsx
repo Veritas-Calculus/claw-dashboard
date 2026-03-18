@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Badge } from '@/components/common'
 import Button from '@/components/common/Button'
-import { IconCheck } from '@/components/common/Icons'
-import { mockAlerts } from '@/lib/mockData'
+import { IconCheck, IconDownload } from '@/components/common/Icons'
+import { useDataAdapter } from '@/hooks'
+import { notifyAlert, requestNotificationPermission } from '@/lib/notifications'
+import { exportCSV } from '@/lib/export'
 import type { AlertItem } from '@/lib/mockData'
+import { getAdapter } from '@/lib/adapters'
 import styles from './Alerts.module.css'
 
 const severityVariant: Record<AlertItem['severity'], 'error' | 'warning' | 'info'> = {
@@ -23,22 +26,73 @@ function timeAgo(iso: string): string {
 
 export default function Alerts() {
   const { t } = useTranslation()
-  const [alerts, setAlerts] = useState(mockAlerts)
   const [filter, setFilter] = useState<AlertItem['severity'] | 'all'>('all')
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+
+  const fetchAlerts = useCallback((a: { fetchAlerts: () => Promise<AlertItem[]> }) => a.fetchAlerts(), [])
+  const { data: alerts, refetch } = useDataAdapter<AlertItem[]>(fetchAlerts)
+
+  // Auto-refresh alerts
+  useEffect(() => {
+    const timer = setInterval(refetch, 10000)
+    return () => clearInterval(timer)
+  }, [refetch])
+
+  const handleAcknowledge = async (id: string) => {
+    await getAdapter().acknowledgeAlert(id)
+    refetch()
+  }
+
+  const handleEnableNotifications = async () => {
+    const ok = await requestNotificationPermission()
+    setNotificationsEnabled(ok)
+    if (ok) {
+      notifyAlert('info', 'Notifications Enabled', 'You will receive desktop notifications for new alerts.')
+    }
+  }
+
+  const handleExport = () => {
+    if (!alerts) return
+    exportCSV(alerts, `claw-alerts-${new Date().toISOString().slice(0, 10)}`, [
+      { key: 'id', header: 'ID' },
+      { key: 'severity', header: 'Severity' },
+      { key: 'title', header: 'Title' },
+      { key: 'message', header: 'Message' },
+      { key: 'agentName', header: 'Agent' },
+      { key: 'timestamp', header: 'Time' },
+      { key: 'acknowledged', header: 'Acknowledged' },
+    ])
+  }
+
+  if (!alerts) {
+    return <div className={styles.page}>Loading...</div>
+  }
 
   const filtered = filter === 'all' ? alerts : alerts.filter((a) => a.severity === filter)
-
-  const handleAcknowledge = (id: string) => {
-    setAlerts(alerts.map((a) => a.id === id ? { ...a, acknowledged: true } : a))
-  }
+  const unackCount = alerts.filter((a) => !a.acknowledged).length
 
   return (
     <div id="alerts-page" className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.pageTitle}>{t('nav.alerts')}</h1>
-        <Badge variant="error" dot>
-          {alerts.filter((a) => !a.acknowledged).length} unacknowledged
-        </Badge>
+        <div className={styles.headerActions}>
+          <Badge variant="error" dot>
+            {unackCount} unacknowledged
+          </Badge>
+          {!notificationsEnabled && (
+            <Button variant="secondary" size="sm" onClick={handleEnableNotifications}>
+              Enable Notifications
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<IconDownload size={14} />}
+            onClick={handleExport}
+          >
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <Card padding="sm">
@@ -50,6 +104,11 @@ export default function Alerts() {
               onClick={() => setFilter(s)}
             >
               {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s !== 'all' && (
+                <span className={styles.filterCount}>
+                  {alerts.filter((a) => a.severity === s).length}
+                </span>
+              )}
             </button>
           ))}
         </div>
