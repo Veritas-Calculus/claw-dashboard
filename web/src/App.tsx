@@ -7,6 +7,7 @@ import Logs from '@/pages/Logs'
 import Alerts from '@/pages/Alerts'
 import Topology from '@/pages/Topology'
 import Settings from '@/pages/Settings'
+import Users from '@/pages/Users'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
 
@@ -19,6 +20,7 @@ function AppRoutes() {
       <Route path="/logs" element={<Logs />} />
       <Route path="/alerts" element={<Alerts />} />
       <Route path="/topology" element={<Topology />} />
+      <Route path="/users" element={<Users />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

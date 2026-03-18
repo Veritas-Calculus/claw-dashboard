@@ -9,7 +9,7 @@ mod services;
 use std::sync::Arc;
 
 use axum::{
-    routing::{get, post},
+    routing::{get, post, patch, delete},
     Router,
 };
 use tokio::sync::broadcast;
@@ -95,6 +95,10 @@ async fn main() {
         .route("/api/v1/alerts/{id}/ack",     post(handlers::alerts::acknowledge_alert))
         .route("/api/v1/dashboard/metrics",   get(handlers::dashboard::get_metrics))
         .route("/api/v1/auth/me",             get(handlers::auth::me))
+        .route("/api/v1/users",               get(handlers::users::list_users)
+                                                  .post(handlers::users::create_user))
+        .route("/api/v1/users/{id}",          patch(handlers::users::update_user)
+                                                  .delete(handlers::users::delete_user))
         .layer(axum::middleware::from_fn(middleware::auth::require_auth));
 
     // Public routes + merge protected

@@ -8,6 +8,7 @@ import {
   IconAlert,
   IconTopology,
   IconSettings,
+  IconUser,
   IconChevronLeft,
   IconChevronRight,
 } from '@/components/common/Icons'
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/logs', icon: IconLog, labelKey: 'nav.logs' },
   { path: '/alerts', icon: IconAlert, labelKey: 'nav.alerts' },
   { path: '/topology', icon: IconTopology, labelKey: 'nav.topology' },
+  { path: '/users', icon: IconUser, labelKey: 'nav.users' },
 ]
 
 const bottomItems = [
