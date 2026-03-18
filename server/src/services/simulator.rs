@@ -53,6 +53,14 @@ pub async fn run_simulator(pool: PgPool, tx: Arc<broadcast::Sender<String>>) {
 
             let _ = Agent::upsert(&pool, &agent).await;
 
+            // Record metrics for trend data
+            let _ = crate::models::metric_record::MetricRecord::insert(
+                &pool, &agent.id, "cpu", agent.cpu as f32,
+            ).await;
+            let _ = crate::models::metric_record::MetricRecord::insert(
+                &pool, &agent.id, "memory", agent.memory as f32,
+            ).await;
+
             // Broadcast agent update
             broadcast_event(&tx, "agent:update", &agent);
         }

@@ -80,8 +80,9 @@ async fn main() {
     // Connect to OpenClaw Gateway if configured
     if let (Some(url), Some(token)) = (cfg.openclaw_gateway_url, cfg.openclaw_gateway_token) {
         let tx = broadcast_tx.clone();
+        let gw_pool = pool.clone();
         tokio::spawn(async move {
-            services::openclaw::connect_to_gateway(url, token, tx).await;
+            services::openclaw::connect_to_gateway(url, token, tx, gw_pool).await;
         });
     }
 

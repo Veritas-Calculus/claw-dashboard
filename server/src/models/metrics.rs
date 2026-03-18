@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::models::metric_record::MetricRecord;
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentsByStatus {
@@ -39,7 +41,7 @@ impl DashboardMetrics {
             offline: *status_map.get("offline").unwrap_or(&0),
         };
 
-        // Task completion rate
+        // Task completion rate (real data from DB)
         let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM tasks")
             .fetch_one(pool)
             .await?;
@@ -53,38 +55,69 @@ impl DashboardMetrics {
             0.0
         };
 
-        // Generate trend data (synthetic for now, based on current time)
-        let task_trend = generate_trend(6, 12.0, 8.0);
-        let cpu_trend = generate_trend(6, 45.0, 30.0);
-        let memory_trend = generate_trend(6, 55.0, 20.0);
+        // Avg response time: average task duration over the last 24h
+        let avg_rt: (Option<f64>,) = sqlx::query_as(
+            "SELECT AVG(CAST(REGEXP_REPLACE(duration, '[^0-9.]', '', 'g') AS NUMERIC))
+             FROM tasks WHERE duration != '--' AND created_at > NOW() - INTERVAL '24 hours'"
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap_or((None,));
+        let avg_response_time = avg_rt.0.unwrap_or(0.0);
+
+        // Total tokens today (count of completed tasks as proxy until real token tracking)
+        let tokens: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM tasks WHERE status = 'completed' AND created_at > CURRENT_DATE"
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
+        let total_tokens_today = tokens.0 * 1000; // estimate: ~1000 tokens per completed task
+
+        // Trend data from metrics_history (real 15-min aggregated data)
+        let cpu_raw = MetricRecord::trend(pool, "cpu", 6).await.unwrap_or_default();
+        let memory_raw = MetricRecord::trend(pool, "memory", 6).await.unwrap_or_default();
+
+        let cpu_trend: Vec<MetricPoint> = cpu_raw
+            .into_iter()
+            .map(|(time, value)| MetricPoint { time, value })
+            .collect();
+        let memory_trend: Vec<MetricPoint> = memory_raw
+            .into_iter()
+            .map(|(time, value)| MetricPoint { time, value })
+            .collect();
+
+        // Task trend: completed tasks per 15-min interval
+        let task_raw: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT
+                to_char(date_trunc('hour', created_at) +
+                    (EXTRACT(minute FROM created_at)::int / 15) * interval '15 min',
+                    'HH24:MI') AS time_label,
+                COUNT(*) AS cnt
+             FROM tasks
+             WHERE created_at > NOW() - INTERVAL '6 hours'
+             GROUP BY time_label,
+                date_trunc('hour', created_at) +
+                    (EXTRACT(minute FROM created_at)::int / 15) * interval '15 min'
+             ORDER BY MIN(created_at)"
+        )
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+        let task_trend: Vec<MetricPoint> = task_raw
+            .into_iter()
+            .map(|(time, count)| MetricPoint { time, value: count as f64 })
+            .collect();
 
         Ok(Self {
             agents_by_status,
             task_completion_rate: (task_completion_rate * 10.0).round() / 10.0,
-            avg_response_time: 1.8,
-            total_tokens_today: 148720,
+            avg_response_time: (avg_response_time * 10.0).round() / 10.0,
+            total_tokens_today,
             task_trend,
             cpu_trend,
             memory_trend,
         })
     }
-}
-
-fn generate_trend(hours: usize, base: f64, variance: f64) -> Vec<MetricPoint> {
-    use chrono::Utc;
-    use rand::Rng;
-
-    let now = Utc::now();
-    let mut rng = rand::thread_rng();
-    let intervals = hours * 4; // every 15 min
-
-    (0..=intervals)
-        .map(|i| {
-            let t = now - chrono::Duration::minutes((intervals - i) as i64 * 15);
-            MetricPoint {
-                time: t.format("%H:%M").to_string(),
-                value: (base + (rng.r#gen::<f64>() - 0.5) * variance).round(),
-            }
-        })
-        .collect()
 }
