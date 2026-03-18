@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/common'
-import { mockLogs } from '@/lib/mockData'
+import Button from '@/components/common/Button'
+import { useLiveLogs } from '@/hooks'
 import type { LogEntry } from '@/lib/mockData'
 import styles from './Logs.module.css'
 
@@ -25,9 +26,9 @@ export default function Logs() {
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState<LogEntry['level'] | 'all'>('all')
 
-  const logs = useMemo(() => mockLogs(100), [])
+  const { logs, isPaused, pause, resume, clear } = useLiveLogs({ pollInterval: 2000 })
 
-  const filtered = logs.filter((log) => {
+  const filtered = useMemo(() => logs.filter((log) => {
     if (levelFilter !== 'all' && log.level !== levelFilter) return false
     if (search) {
       const q = search.toLowerCase()
@@ -37,11 +38,24 @@ export default function Logs() {
       )
     }
     return true
-  })
+  }), [logs, levelFilter, search])
 
   return (
     <div id="logs-page" className={styles.page}>
-      <h1 className={styles.pageTitle}>{t('nav.logs')}</h1>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('nav.logs')}</h1>
+        <div className={styles.headerActions}>
+          <span className={styles.logCount}>{logs.length} entries</span>
+          <Button
+            variant={isPaused ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={isPaused ? resume : pause}
+          >
+            {isPaused ? 'Resume' : 'Pause'}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={clear}>Clear</Button>
+        </div>
+      </div>
 
       <Card padding="sm">
         <div className={styles.toolbar}>
@@ -67,6 +81,7 @@ export default function Logs() {
       </Card>
 
       <Card padding="sm" className={styles.logContainer}>
+        {isPaused && <div className={styles.pauseBanner}>Stream paused</div>}
         <div className={styles.logList}>
           {filtered.map((log) => {
             const cfg = levelConfig[log.level]

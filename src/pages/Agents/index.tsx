@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Badge, Table } from '@/components/common'
 import { StatusDot } from '@/components/common/Badge'
-
 import { IconSearch, IconRefresh } from '@/components/common/Icons'
 import Button from '@/components/common/Button'
-import { mockAgents } from '@/lib/mockData'
+import { useAgentStore } from '@/store'
+import { useAgentStream } from '@/hooks'
 import type { Agent } from '@/store/agentStore'
 import styles from './Agents.module.css'
 
@@ -37,8 +37,10 @@ export default function Agents() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<Agent['status'] | 'all'>('all')
+  const agents = useAgentStore((s) => s.agents)
+  const { reload } = useAgentStream()
 
-  const filtered = mockAgents.filter((a) => {
+  const filtered = agents.filter((a) => {
     if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false
     if (statusFilter !== 'all' && a.status !== statusFilter) return false
     return true
@@ -121,7 +123,7 @@ export default function Agents() {
     <div id="agents-page" className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.pageTitle}>{t('nav.agents')}</h1>
-        <Button variant="secondary" icon={<IconRefresh size={14} />} size="sm">
+        <Button variant="secondary" icon={<IconRefresh size={14} />} size="sm" onClick={reload}>
           Refresh
         </Button>
       </div>
@@ -148,7 +150,7 @@ export default function Agents() {
                 {s === 'all' ? 'All' : statusLabel[s]}
                 {s !== 'all' && (
                   <span className={styles.filterCount}>
-                    {mockAgents.filter((a) => a.status === s).length}
+                    {agents.filter((a) => a.status === s).length}
                   </span>
                 )}
               </button>

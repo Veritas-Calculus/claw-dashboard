@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card } from '@/components/common'
 import { StatusDot } from '@/components/common/Badge'
-import { getMockDashboardMetrics, mockTasks, mockAlerts } from '@/lib/mockData'
+import { useDataAdapter } from '@/hooks'
+import type { DashboardMetrics, TaskItem, AlertItem } from '@/lib/mockData'
 import styles from './Dashboard.module.css'
 
 const statusColors = {
@@ -43,9 +44,28 @@ function timeAgo(iso: string): string {
 
 export default function Dashboard() {
   const { t } = useTranslation()
-  const metrics = useMemo(() => getMockDashboardMetrics(), [])
-  const recentTasks = mockTasks.slice(0, 6)
-  const recentAlerts = mockAlerts.slice(0, 4)
+
+  // Use adapter for all data
+  const fetchMetrics = useCallback((a: { fetchDashboardMetrics: () => Promise<DashboardMetrics> }) => a.fetchDashboardMetrics(), [])
+  const fetchTasks = useCallback((a: { fetchTasks: () => Promise<TaskItem[]> }) => a.fetchTasks(), [])
+  const fetchAlerts = useCallback((a: { fetchAlerts: () => Promise<AlertItem[]> }) => a.fetchAlerts(), [])
+
+  const { data: metrics, refetch: refetchMetrics } = useDataAdapter<DashboardMetrics>(fetchMetrics)
+  const { data: tasks } = useDataAdapter<TaskItem[]>(fetchTasks)
+  const { data: alerts } = useDataAdapter<AlertItem[]>(fetchAlerts)
+
+  // Auto-refresh metrics every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(refetchMetrics, 5000)
+    return () => clearInterval(timer)
+  }, [refetchMetrics])
+
+  if (!metrics || !tasks || !alerts) {
+    return <div className={styles.dashboard}><div className={styles.loading}>Loading...</div></div>
+  }
+
+  const recentTasks = tasks.slice(0, 6)
+  const recentAlerts = alerts.slice(0, 4)
 
   const statCards = [
     { key: 'active', label: t('status.active'), value: metrics.agentsByStatus.active, color: statusColors.active },
