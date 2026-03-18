@@ -16,6 +16,8 @@ import { useWebSocket } from '@/hooks'
 import { StatusDot } from '@/components/common/Badge'
 import styles from './Settings.module.css'
 
+const APP_VERSION = '0.3.0'
+
 const adapterOptions = [
   { value: 'mock', label: 'Mock (Offline)' },
   { value: 'openclaw', label: 'OpenClaw API' },
@@ -171,11 +173,11 @@ export default function Settings() {
           <div className={styles.aboutGrid}>
             <div className={styles.aboutItem}>
               <span className={styles.aboutLabel}>Version</span>
-              <span className={styles.aboutValue}>0.2.0-dev</span>
+              <span className={styles.aboutValue}>{APP_VERSION}</span>
             </div>
             <div className={styles.aboutItem}>
               <span className={styles.aboutLabel}>Build</span>
-              <span className={styles.aboutValue}>Phase 3</span>
+              <span className={styles.aboutValue}>Stable</span>
             </div>
             <div className={styles.aboutItem}>
               <span className={styles.aboutLabel}>License</span>

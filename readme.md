@@ -29,7 +29,11 @@
 - Dark/light theme with Apple-style glassmorphism
 - i18n (Chinese / English)
 - First-run admin setup (no env passwords)
+- JWT authentication middleware on all protected API routes
+- User management (admin: create, update role/password, delete)
+- Redis-cached dashboard metrics (5s TTL)
 - OpenClaw Gateway integration via WebSocket protocol v3
+- Time-series metrics history with 15-min trend aggregation
 
 ## Quick Start
 
@@ -107,8 +111,9 @@ claw-dashboard/
     src/
       config.rs          # Environment configuration
       error.rs           # Centralized error handling
-      handlers/          # REST + WebSocket + Auth handlers
-      models/            # Database models (Agent, Task, Log, Alert)
+      handlers/          # REST + WebSocket + Auth + User handlers
+      middleware/         # JWT auth middleware
+      models/            # Database models (Agent, Task, Log, Alert, MetricRecord)
       services/          # Seed, Simulator, OpenClaw client
       db/                # PostgreSQL + Redis connections
     migrations/          # SQL schema migrations
@@ -176,21 +181,25 @@ GET /api/v1/auth/me        --> { "id": "...", "username": "...", "role": "admin"
 | GET | `/api/v1/auth/status` | No | Check if setup is needed |
 | POST | `/api/v1/auth/setup` | No | Create first admin |
 | POST | `/api/v1/auth/login` | No | Login, get JWT |
-| GET | `/api/v1/auth/me` | Yes | Validate token |
-| GET | `/api/v1/agents` | Yes | List all agents |
-| GET | `/api/v1/tasks` | Yes | List all tasks |
-| GET | `/api/v1/logs?limit=N` | Yes | Recent logs |
-| GET | `/api/v1/alerts` | Yes | All alerts |
-| POST | `/api/v1/alerts/{id}/ack` | Yes | Acknowledge alert |
-| GET | `/api/v1/dashboard/metrics` | Yes | Aggregated stats |
-| GET | `/ws` | Token | WebSocket (real-time events) |
+| GET | `/api/v1/auth/me` | JWT | Validate token |
+| GET | `/api/v1/agents` | JWT | List all agents |
+| GET | `/api/v1/tasks` | JWT | List all tasks |
+| GET | `/api/v1/logs?limit=N&offset=M&level=warn` | JWT | Logs with pagination and filter |
+| GET | `/api/v1/alerts` | JWT | All alerts |
+| POST | `/api/v1/alerts/{id}/ack` | JWT | Acknowledge alert |
+| GET | `/api/v1/dashboard/metrics` | JWT | Aggregated stats (Redis cached) |
+| GET | `/api/v1/users` | JWT (admin) | List all users |
+| POST | `/api/v1/users` | JWT (admin) | Create user |
+| PATCH | `/api/v1/users/{id}` | JWT (admin) | Update role or password |
+| DELETE | `/api/v1/users/{id}` | JWT (admin) | Delete user |
+| GET | `/ws?token=JWT` | Query param | WebSocket (real-time events) |
 
 ## Development
 
 ### Prerequisites
 
 - Node.js 22+
-- Rust 1.84+
+- Rust 1.94+
 - PostgreSQL 17
 - Redis 7
 - Docker (optional)
